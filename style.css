@@ -46,6 +46,7 @@
     --menu-orbit-scale-x: 1;
     --menu-orbit-scale-y: 0.6;
     --menu-stage-scale: 1;
+    --menu-stage-scale-zoom: 1.5; /* ultrawide only */
     --button-size: 90px;
     --ring-rotation-duration: 60s;
     --overlay-transition: 700ms;
@@ -85,7 +86,7 @@
     --card-banner-hover-mix: 95%;
 
     /* Content view variables */
-    --content-view-bg: color-mix(in srgb, color-mix(in srgb, var(--accent3) 50%, var(--bg)) 90%, transparent);
+    --content-view-bg: color-mix(in srgb, var(--bg) 50%, transparent);
     --content-sub-color: color-mix(in srgb, var(--accentl) 75%, transparent);
 
     /* Panel variables */
@@ -101,7 +102,7 @@
     --detail-caption-color: var(--accentl);
 
     /* Focused layout variables */
-    --focused-layout-bg: color-mix(in srgb, color-mix(in srgb, var(--accent3) 50%, var(--bg)) 90%, transparent);
+    --focused-layout-bg: color-mix(in srgb, var(--bg) 50%, transparent);
 
     /* Button variables */
     --ui-btn-bg: var(--white);
@@ -157,7 +158,8 @@
     --copy-link-copied-stroke: var(--color-5);
 
     /* system variables (DO NOT EDIT) */
-    --offset-main-menu-on-open: -25vw;
+    --offset-main-menu-on-open: 0;
+    --menu-stage-scale-reset: 0;
 }
 
 @media only screen and (orientation: portrait) {
@@ -440,7 +442,7 @@ hr {
     pointer-events: auto;
 }
 
-.menu-item:hover {
+.menu-item:hover, .menu-item.active {
     box-shadow: 0 0 50px var(--glow, rgba(255, 255, 255, 0.75));
 }
 
@@ -477,8 +479,8 @@ hr {
     inset: 0;
     display: flex;
     flex-direction: column;
-    max-width: 50%;
-    margin: 0 0 0 50%;
+    max-width: 100%;
+    margin: 0;
     padding: 36px;
     gap: 0;
     z-index: 25;
@@ -572,10 +574,12 @@ hr {
 }
 
 @keyframes cardThumbOsc {
+
     0%,
     100% {
         scale: 0.95;
     }
+
     50% {
         scale: 1.0;
     }
@@ -800,8 +804,8 @@ hr {
     display: flex;
     align-items: stretch;
     justify-content: center;
-    max-width: 50%;
-    margin: 0 0 0 50%;
+    max-width: 100%;
+    margin: 0;
     padding-top: 72px;
     padding-bottom: 90px;
     padding-left: 50px;
@@ -1509,18 +1513,18 @@ textarea#zenpenOutput {
     Responsive layout
     -------------------------- */
 
-/* non-wide screens */
-@media (max-width:2160px) {
+/* ultrawide screens */
+@media (min-width:2160px) {
     :root {
-        --offset-main-menu-on-open: 0;
-        --content-view-bg: color-mix(in srgb, var(--bg) 50%, transparent);
-        --focused-layout-bg: color-mix(in srgb, var(--bg) 50%, transparent);
+        --offset-main-menu-on-open: -25vw;
+        --content-view-bg: color-mix(in srgb, color-mix(in srgb, var(--accent3) 50%, var(--bg)) 90%, transparent);
+        --focused-layout-bg: color-mix(in srgb, color-mix(in srgb, var(--accent3) 50%, var(--bg)) 90%, transparent);
     }
 
     .content-view,
     .detail-view {
-        max-width: 100%;
-        margin: 0;
+        max-width: 50%;
+        margin: 0 0 0 50%;
     }
 }
 

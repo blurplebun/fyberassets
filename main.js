@@ -28,7 +28,7 @@ const MAIN_MENU_TITLE = 'Main Menu';
 const MAIN_MENU_SUBTITLE = 'Welcome to the Fyberverse!';
 const SIMPLE_MODE_MENU_LOGO_SCALE = 1.5;
 
-const ORBIT_FPS = 20;
+const ORBIT_FPS = 40;
 
 // Links
 const eFolder = "e";
@@ -54,6 +54,11 @@ function getCSSVar(name, parse = 'string') {
     if (parse === 'int') return parseInt(val) || 0;
     if (parse === 'float') return parseFloat(val) || 0;
     return val;
+}
+
+// set CSS variable value
+function setCSSVar(name, value) {
+    document.documentElement.style.setProperty(name, value);
 }
 
 // Detect mobile/tablet device
@@ -139,10 +144,13 @@ async function copyToClipboard(button, textbox) {
 let isDragging = false;
 let startX = 0, startY = 0;
 let currentX = 0, currentY = 0;
+let cameraFollowBtn = null;
 const parallaxFactor = -0.1;
 
 const transStyle = 'transition: filter var(--layout-transition-speed), transform 0.5s cubic-bezier(.2, .9, .2, 1), opacity 1000ms;'
 const transStyleSlow = 'transition: filter var(--layout-transition-speed), transform 1s cubic-bezier(.2, .9, .2, 1), opacity 1000ms;'
+
+setCSSVar('--menu-stage-scale-reset', getCSSVar('--menu-stage-scale'));
 
 // is wide screen?
 function checkWideScreen() {
@@ -220,6 +228,7 @@ function enableCameraControl(el) {
         currentY = clientY - startY;
         setButtonViz(centerBtn, true);
         setElTransform(el, currentX, currentY, transStyle, offsetMainMenu);
+        resetCameraFollow()
     }
 
     // end drag
@@ -261,6 +270,7 @@ function enableCameraControl(el) {
 function snapCameraToCenter(el) {
     currentX = 0; currentY = 0;
     offsetMainMenu = menuIsOpen;
+    if (checkWideScreen) resetCameraFollow();
     setElTransform(el, currentX, currentY, transStyleSlow, offsetMainMenu);
     setTimeout(() => {
         starfield?.querySelectorAll('.star-layer').forEach(layer => layer.style.transition = '');
@@ -458,10 +468,7 @@ function createMenuItemElements(menus, layer, orbitLayer, count, direction, phas
 let openSingle = false;
 function openMainMenuButton(btn, m) {
     animateExpander();
-    if (checkWideScreen()) {
-        currentX = -btn.dataset.x;
-        currentY = -btn.dataset.y;
-    }
+    setCameraFollow(btn);
     if (m.labels && m.labels.length == 1) {
         openSingle = true;
         if (m.menuId === "random") { openRandom(); setButtonViz(rerollBtn, true); return; }
@@ -619,12 +626,50 @@ function orbitMenuLoop(t) {
             const s = (!menuIsOpen && !isDragging) ? calculateMenuScale(b, cursorPos) * b.dataset.scale : b.dataset.scale;
             applyMenuPos(b, s, r, omega, x0, y0);
 
+
         });
+
+        followCameraWithCurrentButton();
+        zoomCameraWithCurrentButton()
+        if (!checkWideScreen()) resetCameraFollow();
 
         positionOrbitRings(rings);
     }
 
     requestAnimationFrame(orbitMenuLoop);
+}
+
+// set button for the camera to follow 
+function setCameraFollow(btn) {
+    cameraFollowBtn?.classList.remove('active');
+    cameraFollowBtn = btn;
+}
+
+// apply camera follow
+function followCameraWithCurrentButton() {
+    if (!checkWideScreen()) return;
+    if (!cameraFollowBtn) return;
+    currentX = -cameraFollowBtn.dataset.x * getCSSVar('--menu-stage-scale-zoom', 'float');
+    currentY = -cameraFollowBtn.dataset.y * getCSSVar('--menu-stage-scale-zoom', 'float');
+    setElTransform(mainMenu, currentX, currentY, null, offsetMainMenu);
+    setButtonViz(centerBtn, true);
+    cameraFollowBtn.classList.add('active');
+}
+
+// apply camera zoom if following a button
+function zoomCameraWithCurrentButton() {
+    if (!checkWideScreen()) return
+    if (!cameraFollowBtn) {
+        setCSSVar('--menu-stage-scale', getCSSVar('--menu-stage-scale-reset'));
+        return;
+    }
+    setCSSVar('--menu-stage-scale', getCSSVar('--menu-stage-scale-zoom'));
+}
+
+// reset camera follow
+function resetCameraFollow() {
+    setCameraFollow(null);
+    setCSSVar('--menu-stage-scale', getCSSVar('--menu-stage-scale-reset'));
 }
 
 // blur main menu
@@ -1678,6 +1723,7 @@ function openLogo() {
     if (SIMPLE_MODE) return openMenuById('index');
     openSingle = true;
     const [menu, card] = menuLogoRedirect.split(":");
+    if (checkWideScreen()) { currentX = 0; currentY = 0; resetCameraFollow(); }
     if (menu && card) {
         openCardById(menu, card);
         return;
