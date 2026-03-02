@@ -1751,24 +1751,33 @@ function goBack() {
 
     // if detail view is open -> go back to content view
     if (layoutViz(detailView)) {
-        if (openFromReference) { openMenuById(openFromReference); openFromReference = null; return; }
+        if (openFromReference) { openMenuWithoutHistoryPush(openFromReference); openFromReference = null; return; }
         const m = getMenuData(currentMenu());
-        changeBackBtnText(m.parent && !openSingle ? getMenuData(m.parent).title : 'Close')
-        // detailViewContent.innerHTML = '';
+        changeBackBtnText(m.parent && !openSingle ? getMenuData(m.parent).title : 'Close');
         setLayoutViz(detailView, false);
         setLayoutViz(contentView, true);
-        setHistoryState(contentView.dataset.currentMenuId);
+
+        // update URL without adding another history entry
+        const menuId = contentView.dataset.currentMenuId;
+        if (menuId) history.replaceState({}, '', `?m=${menuId}`); else history.replaceState({}, '', window.location.pathname);
         return;
 
         // if content view is open
     } else if (layoutViz(contentView)) {
         const parentMenu = getMenuData(currentMenu()).parent;
         // if parent menu exists
-        if (parentMenu) { openMenuById(parentMenu); return; }
+        if (parentMenu) { openMenuWithoutHistoryPush(parentMenu); history.replaceState({}, '', `?m=${parentMenu}`); return; }
 
         // if no parent menu -> go back to main menu
         returnToMainMenu();
     }
+}
+
+// open menu but do not push the history
+function openMenuWithoutHistoryPush(menuId) {
+    ignoreHistoryPush = true;
+    openMenuById(menuId);
+    ignoreHistoryPush = false;
 }
 
 // return to main menu
@@ -1783,7 +1792,7 @@ function returnToMainMenu() {
     menuIsOpen = false;
     if (checkWideScreen()) snapCameraToCenter(mainMenu);
 
-    setHistoryState(null);
+    history.replaceState({}, '', window.location.pathname);
 }
 
 // internal link handler: <a data-open-card="q:id">
@@ -1809,13 +1818,15 @@ document.addEventListener('click', (e) => {
 // URL PARAMS ON LOAD
 // --------------------------
 
+// history management helpers
+let ignoreHistoryPush = false; // when true, setHistoryState does nothing
+
 // set the history state by rewriting the URL parameters
 function setHistoryState(menuId, cardId = null) {
-    if (!menuId) {
-        history.pushState({}, '', window.location.pathname);
-        return;
-    }
-    history.pushState({}, '', `?m=${menuId}${cardId ? `&i=${cardId}` : ''}`);
+    if (ignoreHistoryPush) return;
+    const url = !menuId ? window.location.pathname
+        : `?m=${menuId}${cardId ? `&i=${cardId}` : ''}`;
+    history.pushState({}, '', url);
 }
 
 // wait for a card element to appear in the content grid (used for URL param loading)
@@ -1836,16 +1847,20 @@ async function loadAndPopstateHandler() {
     const menu = params.get('m');
     const card = params.get('i');
 
-    const targetMenu = menuItems.find(m => m.menuId === menu);
-    if (!targetMenu) {
-        returnToMainMenu(); return;
-    };
+    // when responding to a popstate event we do *not* want to push another history entry,
+    // otherwise the browser back button never actually moves back.  Instead we temporarily
+    // ignore history pushes while opening the requested menu/card and then restore the flag.
+    ignoreHistoryPush = true;
 
+    const targetMenu = menuItems.find(m => m.menuId === menu);
+    if (!targetMenu) { returnToMainMenu(); return; };
+    
     openMenuById(targetMenu.menuId);
     if (card && targetMenu) {
         const cardEl = await waitForCard(card, 2000, 40);
         if (cardEl) openCard(cardEl, getCardData(menu, card));
-    }
+    } else openSingle = false;
+    ignoreHistoryPush = false;
 }
 
 

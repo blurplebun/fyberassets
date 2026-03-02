@@ -1514,7 +1514,7 @@ textarea#zenpenOutput {
     -------------------------- */
 
 /* ultrawide screens */
-@media (min-width:2160px) {
+@media (min-width:2360px) {
     :root {
         --offset-main-menu-on-open: -25vw;
         --content-view-bg: color-mix(in srgb, color-mix(in srgb, var(--accent3) 50%, var(--bg)) 90%, transparent);
